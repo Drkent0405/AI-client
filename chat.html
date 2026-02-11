@@ -433,6 +433,11 @@
 
     let settings = JSON.parse(localStorage.getItem('ai_debate_settings') || '{}');
 
+    // 첫 접속 시 API 키가 없으면 자동으로 설정 모달 열기
+    if (!settings.anthropicKey || !settings.openaiKey || !settings.googleKey) {
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
     // ─── 설정 ───
     function openSettings() {
       document.getElementById('settingsModal').classList.remove('hidden');
