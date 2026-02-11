@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI Chat</title>
+  <title>AI 토론 시스템</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -17,7 +17,7 @@
       flex-direction: column;
     }
 
-    /* 헤더 */
+    /* ─── 헤더 ─── */
     .header {
       background: #161b22;
       padding: 12px 20px;
@@ -28,24 +28,15 @@
       flex-shrink: 0;
     }
 
-    .header h1 {
-      font-size: 17px;
-      font-weight: 700;
-      flex-shrink: 0;
+    .header h1 { font-size: 17px; font-weight: 700; }
+    .header-badge {
+      font-size: 11px;
+      background: #238636;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
     }
-
-    .model-select {
-      background: #21262d;
-      border: 1px solid #30363d;
-      color: #e6edf3;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      outline: none;
-      cursor: pointer;
-    }
-
-    .model-select:focus { border-color: #58a6ff; }
 
     .header-actions {
       margin-left: auto;
@@ -66,25 +57,52 @@
 
     .header-btn:hover { color: #e6edf3; border-color: #58a6ff; }
 
-    /* 채팅 영역 */
+    /* ─── 채팅 영역 ─── */
     .chat-area {
       flex: 1;
       overflow-y: auto;
       padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     }
 
     .chat-area::-webkit-scrollbar { width: 6px; }
     .chat-area::-webkit-scrollbar-track { background: transparent; }
     .chat-area::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
 
-    /* 메시지 */
-    .message {
+    /* ─── 사용자 메시지 ─── */
+    .message-user {
+      align-self: flex-end;
       display: flex;
-      gap: 12px;
-      max-width: 85%;
+      gap: 10px;
+      flex-direction: row-reverse;
+      max-width: 80%;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .message-user .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #1f6feb; display: flex; align-items: center;
+      justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+
+    .message-user .bubble {
+      background: #1f6feb;
+      padding: 12px 16px;
+      border-radius: 16px;
+      border-bottom-right-radius: 4px;
+      font-size: 14.5px;
+      line-height: 1.55;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    /* ─── AI 토론 결과 블록 ─── */
+    .discussion-block {
+      align-self: flex-start;
+      width: 100%;
+      max-width: 90%;
       animation: fadeIn 0.25s ease;
     }
 
@@ -93,82 +111,155 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .message.user { align-self: flex-end; flex-direction: row-reverse; }
-    .message.ai { align-self: flex-start; }
+    /* 최종 합의 */
+    .final-answer {
+      background: #161b22;
+      border: 1px solid #238636;
+      border-radius: 12px;
+      padding: 16px;
+    }
 
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
+    .final-answer-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 13px;
       font-weight: 700;
-    }
-
-    .message.user .avatar { background: #1f6feb; }
-    .message.ai .avatar { background: #238636; }
-
-    .bubble {
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 14.5px;
-      line-height: 1.55;
-      word-break: break-word;
-      white-space: pre-wrap;
-    }
-
-    .message.user .bubble {
-      background: #1f6feb;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message.ai .bubble {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-bottom-left-radius: 4px;
-    }
-
-    .bubble .model-tag {
-      font-size: 11px;
       color: #58a6ff;
-      font-weight: 600;
-      margin-bottom: 6px;
     }
 
-    .bubble .msg-time {
+    .final-answer-header .icon { font-size: 16px; }
+
+    .final-answer-body {
+      font-size: 14.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .final-answer .msg-time {
       font-size: 11px;
       color: #484f58;
-      margin-top: 6px;
+      margin-top: 10px;
       text-align: right;
     }
 
-    /* 타이핑 인디케이터 */
-    .typing-indicator {
+    /* 토론 과정 토글 */
+    .discussion-toggle {
+      margin-top: 10px;
+      background: none;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #8b949e;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .discussion-toggle:hover { color: #e6edf3; border-color: #58a6ff; }
+
+    .discussion-detail {
+      display: none;
+      margin-top: 12px;
+      border-left: 2px solid #30363d;
+      padding-left: 14px;
+    }
+
+    .discussion-detail.open { display: block; }
+
+    .round-section {
+      margin-bottom: 16px;
+    }
+
+    .round-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f0883e;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .ai-response {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .ai-response-header {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
       display: flex;
-      gap: 4px;
-      padding: 8px 0;
+      align-items: center;
+      gap: 6px;
     }
 
-    .typing-indicator span {
-      width: 7px;
-      height: 7px;
-      background: #58a6ff;
+    .ai-response-header.claude { color: #d2a8ff; }
+    .ai-response-header.gpt { color: #7ee787; }
+    .ai-response-header.gemini { color: #79c0ff; }
+
+    .ai-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    }
+
+    .ai-dot.claude { background: #d2a8ff; }
+    .ai-dot.gpt { background: #7ee787; }
+    .ai-dot.gemini { background: #79c0ff; }
+
+    .ai-response-body {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #b1bac4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ─── 진행 상태 ─── */
+    .progress-block {
+      align-self: flex-start;
+      width: 100%;
+      max-width: 90%;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .progress-bar {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 13px;
+      color: #484f58;
+    }
+
+    .progress-step.active { color: #58a6ff; font-weight: 600; }
+    .progress-step.done { color: #238636; }
+
+    .progress-step .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid #30363d;
+      border-top-color: #58a6ff;
       border-radius: 50%;
-      animation: bounce 1.2s infinite;
+      animation: spin 0.8s linear infinite;
     }
 
-    .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-      30% { transform: translateY(-6px); opacity: 1; }
-    }
+    .progress-step .check { color: #238636; font-weight: 700; }
 
-    /* 시스템 메시지 */
+    /* ─── 시스템 메시지 ─── */
     .system-msg {
       text-align: center;
       font-size: 13px;
@@ -176,7 +267,7 @@
       padding: 8px;
     }
 
-    /* 입력 영역 */
+    /* ─── 입력 영역 ─── */
     .input-area {
       background: #161b22;
       padding: 14px 16px;
@@ -206,34 +297,23 @@
     .input-area textarea::placeholder { color: #484f58; }
 
     .send-btn {
-      width: 44px;
-      height: 44px;
-      background: #238636;
-      border: none;
-      border-radius: 50%;
-      color: white;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: all 0.15s;
+      width: 44px; height: 44px;
+      background: #238636; border: none; border-radius: 50%;
+      color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.15s;
     }
 
     .send-btn:hover { background: #2ea043; }
     .send-btn:active { transform: scale(0.93); }
     .send-btn:disabled { background: #21262d; cursor: not-allowed; }
 
-    /* API 키 설정 모달 */
+    /* ─── 설정 모달 ─── */
     .modal-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(4px);
     }
 
     .modal {
@@ -241,22 +321,21 @@
       border: 1px solid #30363d;
       border-radius: 16px;
       padding: 28px 24px;
-      width: min(92%, 420px);
+      width: min(92%, 440px);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal h2 { font-size: 18px; margin-bottom: 8px; }
     .modal p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.5; }
 
     .modal label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: #8b949e;
-      margin-bottom: 6px;
-      margin-top: 14px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: #8b949e;
+      margin-bottom: 6px; margin-top: 16px;
     }
 
-    .modal input, .modal select {
+    .modal input {
       width: 100%;
       padding: 10px 14px;
       border: 1px solid #30363d;
@@ -267,43 +346,31 @@
       outline: none;
     }
 
-    .modal input:focus, .modal select:focus { border-color: #58a6ff; }
+    .modal input:focus { border-color: #58a6ff; }
 
     .modal .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
+      display: flex; gap: 10px; margin-top: 24px;
     }
 
     .modal .btn-primary {
-      flex: 1;
-      padding: 11px;
-      background: #238636;
-      border: none;
-      border-radius: 10px;
-      color: white;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
+      flex: 1; padding: 11px;
+      background: #238636; border: none; border-radius: 10px;
+      color: white; font-size: 14px; font-weight: 600; cursor: pointer;
     }
 
     .modal .btn-primary:hover { background: #2ea043; }
 
     .modal .btn-secondary {
       padding: 11px 18px;
-      background: #21262d;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      color: #8b949e;
-      font-size: 14px;
-      cursor: pointer;
+      background: #21262d; border: 1px solid #30363d; border-radius: 10px;
+      color: #8b949e; font-size: 14px; cursor: pointer;
     }
 
     .hidden { display: none !important; }
 
-    /* 모바일 대응 */
     @media (max-width: 600px) {
-      .message { max-width: 92%; }
+      .message-user { max-width: 92%; }
+      .discussion-block { max-width: 100%; }
       .header h1 { font-size: 15px; }
       .header-btn span { display: none; }
     }
@@ -311,27 +378,20 @@
 </head>
 <body>
 
-  <!-- API 설정 모달 -->
+  <!-- 설정 모달 -->
   <div class="modal-overlay hidden" id="settingsModal">
     <div class="modal">
-      <h2>AI 모델 설정</h2>
-      <p>API 키를 입력하면 실제 AI 모델과 대화할 수 있습니다. 키는 브라우저에만 저장됩니다.</p>
+      <h2>API 키 설정</h2>
+      <p>3개 AI 모델의 API 키를 각각 입력하세요. 키는 브라우저에만 저장됩니다.</p>
 
-      <label>API 제공자</label>
-      <select id="apiProvider">
-        <option value="openai">OpenAI (GPT)</option>
-        <option value="anthropic">Anthropic (Claude)</option>
-        <option value="google">Google (Gemini)</option>
-        <option value="custom">커스텀 엔드포인트</option>
-      </select>
+      <label><span class="ai-dot claude"></span> Anthropic (Claude)</label>
+      <input type="password" id="keyAnthropic" placeholder="sk-ant-..." autocomplete="off">
 
-      <label>API Key</label>
-      <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
+      <label><span class="ai-dot gpt"></span> OpenAI (ChatGPT)</label>
+      <input type="password" id="keyOpenAI" placeholder="sk-..." autocomplete="off">
 
-      <div id="customEndpointGroup" class="hidden">
-        <label>커스텀 API URL</label>
-        <input type="text" id="customEndpoint" placeholder="https://your-api.com/v1/chat">
-      </div>
+      <label><span class="ai-dot gemini"></span> Google (Gemini)</label>
+      <input type="password" id="keyGoogle" placeholder="AI..." autocomplete="off">
 
       <div class="btn-row">
         <button class="btn-secondary" onclick="closeSettings()">취소</button>
@@ -342,22 +402,8 @@
 
   <!-- 헤더 -->
   <div class="header">
-    <h1>AI Chat</h1>
-    <select class="model-select" id="modelSelect">
-      <optgroup label="OpenAI">
-        <option value="gpt-4o">GPT-4o</option>
-        <option value="gpt-4o-mini">GPT-4o Mini</option>
-        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-      </optgroup>
-      <optgroup label="Anthropic">
-        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
-        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
-      </optgroup>
-      <optgroup label="Google">
-        <option value="gemini-pro">Gemini Pro</option>
-        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-      </optgroup>
-    </select>
+    <h1>AI 토론</h1>
+    <span class="header-badge">Claude + GPT + Gemini</span>
     <div class="header-actions">
       <button class="header-btn" onclick="openSettings()">&#9881; <span>설정</span></button>
       <button class="header-btn" onclick="clearChat()">&#128465; <span>초기화</span></button>
@@ -366,12 +412,12 @@
 
   <!-- 채팅 영역 -->
   <div class="chat-area" id="chatArea">
-    <div class="system-msg">AI 모델을 선택하고 대화를 시작하세요</div>
+    <div class="system-msg">질문을 입력하면 Claude, ChatGPT, Gemini가 토론 후 합의된 답변을 제공합니다</div>
   </div>
 
-  <!-- 입력 영역 -->
+  <!-- 입력 -->
   <div class="input-area">
-    <textarea id="msgInput" rows="1" placeholder="메시지를 입력하세요..."></textarea>
+    <textarea id="msgInput" rows="1" placeholder="질문을 입력하세요..."></textarea>
     <button class="send-btn" id="sendBtn" onclick="sendMessage()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -384,32 +430,15 @@
     const chatArea = document.getElementById('chatArea');
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
-    const modelSelect = document.getElementById('modelSelect');
-    const apiProvider = document.getElementById('apiProvider');
 
-    // 대화 기록 (컨텍스트 유지)
-    let conversationHistory = JSON.parse(localStorage.getItem('ai_chat_history') || '[]');
+    let settings = JSON.parse(localStorage.getItem('ai_debate_settings') || '{}');
 
-    // 설정 불러오기
-    let settings = JSON.parse(localStorage.getItem('ai_chat_settings') || '{}');
-
-    // 시작 시 기존 대화 복원
-    if (conversationHistory.length > 0) {
-      conversationHistory.forEach(msg => appendMessage(msg, false));
-      scrollToBottom();
-    }
-
-    if (settings.model) {
-      modelSelect.value = settings.model;
-    }
-
-    // ─── 설정 모달 ───
+    // ─── 설정 ───
     function openSettings() {
       document.getElementById('settingsModal').classList.remove('hidden');
-      if (settings.provider) apiProvider.value = settings.provider;
-      if (settings.apiKey) document.getElementById('apiKeyInput').value = settings.apiKey;
-      if (settings.customEndpoint) document.getElementById('customEndpoint').value = settings.customEndpoint;
-      toggleCustomEndpoint();
+      document.getElementById('keyAnthropic').value = settings.anthropicKey || '';
+      document.getElementById('keyOpenAI').value = settings.openaiKey || '';
+      document.getElementById('keyGoogle').value = settings.googleKey || '';
     }
 
     function closeSettings() {
@@ -417,129 +446,20 @@
     }
 
     function saveSettings() {
-      settings.provider = apiProvider.value;
-      settings.apiKey = document.getElementById('apiKeyInput').value.trim();
-      settings.customEndpoint = document.getElementById('customEndpoint').value.trim();
-      localStorage.setItem('ai_chat_settings', JSON.stringify(settings));
+      settings.anthropicKey = document.getElementById('keyAnthropic').value.trim();
+      settings.openaiKey = document.getElementById('keyOpenAI').value.trim();
+      settings.googleKey = document.getElementById('keyGoogle').value.trim();
+      localStorage.setItem('ai_debate_settings', JSON.stringify(settings));
       closeSettings();
-      addSystemMessage('설정이 저장되었습니다.');
+      addSystemMessage('API 키가 저장되었습니다.');
     }
 
-    apiProvider.addEventListener('change', toggleCustomEndpoint);
-
-    function toggleCustomEndpoint() {
-      const group = document.getElementById('customEndpointGroup');
-      group.classList.toggle('hidden', apiProvider.value !== 'custom');
-    }
-
-    // ─── 메시지 전송 ───
-    let isSending = false;
-
-    async function sendMessage() {
-      const text = msgInput.value.trim();
-      if (!text || isSending) return;
-
-      const model = modelSelect.value;
-      settings.model = model;
-      localStorage.setItem('ai_chat_settings', JSON.stringify(settings));
-
-      // 사용자 메시지
-      const userMsg = {
-        role: 'user',
-        content: text,
-        time: getNow()
-      };
-      conversationHistory.push(userMsg);
-      saveHistory();
-      appendMessage(userMsg);
-
-      msgInput.value = '';
-      msgInput.style.height = 'auto';
-
-      // AI 응답 호출
-      isSending = true;
-      sendBtn.disabled = true;
-      const typingEl = showTyping(model);
-
-      try {
-        const reply = await callAI(model, conversationHistory);
-        const aiMsg = {
-          role: 'assistant',
-          model: model,
-          content: reply,
-          time: getNow()
-        };
-        conversationHistory.push(aiMsg);
-        saveHistory();
-        typingEl.remove();
-        appendMessage(aiMsg);
-      } catch (err) {
-        typingEl.remove();
-        addSystemMessage('오류: ' + err.message);
-      }
-
-      isSending = false;
-      sendBtn.disabled = false;
-      msgInput.focus();
-    }
-
-    // ─── AI API 호출 ───
-    async function callAI(model, history) {
-      const provider = settings.provider || detectProvider(model);
-      const apiKey = settings.apiKey;
-
-      if (!apiKey) {
-        throw new Error('API 키가 설정되지 않았습니다. 설정 버튼을 눌러 API 키를 입력하세요.');
-      }
-
-      const messages = history.map(m => ({
-        role: m.role,
-        content: m.content
-      }));
-
-      if (provider === 'openai') {
-        return await callOpenAI(apiKey, model, messages);
-      } else if (provider === 'anthropic') {
-        return await callAnthropic(apiKey, model, messages);
-      } else if (provider === 'google') {
-        return await callGoogle(apiKey, model, messages);
-      } else if (provider === 'custom') {
-        return await callCustom(settings.customEndpoint, apiKey, model, messages);
-      }
-
-      throw new Error('지원하지 않는 제공자입니다.');
-    }
-
-    function detectProvider(model) {
-      if (model.startsWith('gpt')) return 'openai';
-      if (model.startsWith('claude')) return 'anthropic';
-      if (model.startsWith('gemini')) return 'google';
-      return 'openai';
-    }
-
-    // OpenAI
-    async function callOpenAI(apiKey, model, messages) {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey
-        },
-        body: JSON.stringify({ model, messages, max_tokens: 4096 })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      return data.choices[0].message.content;
-    }
-
-    // Anthropic
-    async function callAnthropic(apiKey, model, messages) {
-      // Anthropic API는 CORS 제한이 있어 프록시가 필요할 수 있음
-      const systemMsg = messages.find(m => m.role === 'system');
+    // ─── API 호출 함수 ───
+    async function callClaude(messages) {
       const chatMsgs = messages.filter(m => m.role !== 'system');
-
+      const systemMsg = messages.find(m => m.role === 'system');
       const body = {
-        model,
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4096,
         messages: chatMsgs
       };
@@ -549,95 +469,291 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
+          'x-api-key': settings.anthropicKey,
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify(body)
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) throw new Error('Claude: ' + data.error.message);
       return data.content[0].text;
     }
 
-    // Google Gemini
-    async function callGoogle(apiKey, model, messages) {
-      const contents = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents })
-        }
-      );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      return data.candidates[0].content.parts[0].text;
-    }
-
-    // 커스텀 엔드포인트 (OpenAI 호환 형식)
-    async function callCustom(endpoint, apiKey, model, messages) {
-      const res = await fetch(endpoint, {
+    async function callGPT(messages) {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey
+          'Authorization': 'Bearer ' + settings.openaiKey
         },
-        body: JSON.stringify({ model, messages, max_tokens: 4096 })
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: messages,
+          max_tokens: 4096
+        })
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-      if (data.choices) return data.choices[0].message.content;
-      if (data.content) return data.content[0].text;
-      return JSON.stringify(data);
+      if (data.error) throw new Error('GPT: ' + data.error.message);
+      return data.choices[0].message.content;
+    }
+
+    async function callGemini(messages) {
+      const contents = messages
+        .filter(m => m.role !== 'system')
+        .map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }]
+        }));
+
+      const systemMsg = messages.find(m => m.role === 'system');
+      const body = { contents };
+      if (systemMsg) {
+        body.systemInstruction = { parts: [{ text: systemMsg.content }] };
+      }
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${settings.googleKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error('Gemini: ' + data.error.message);
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    // ─── 메시지 전송 & 토론 ───
+    let isSending = false;
+
+    async function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text || isSending) return;
+
+      if (!settings.anthropicKey || !settings.openaiKey || !settings.googleKey) {
+        addSystemMessage('설정에서 3개 API 키를 모두 입력해주세요.');
+        openSettings();
+        return;
+      }
+
+      isSending = true;
+      sendBtn.disabled = true;
+
+      // 사용자 메시지 표시
+      appendUserMessage(text);
+      msgInput.value = '';
+      msgInput.style.height = 'auto';
+
+      // 진행 상태 블록
+      const progressEl = createProgressBlock();
+      chatArea.appendChild(progressEl);
+      scrollToBottom();
+
+      const round1 = { claude: '', gpt: '', gemini: '' };
+      const round2 = { claude: '', gpt: '', gemini: '' };
+      let finalAnswer = '';
+
+      try {
+        // ── Round 1: 개별 답변 ──
+        updateProgress(progressEl, 1);
+        const userMessages = [{ role: 'user', content: text }];
+
+        const [r1Claude, r1GPT, r1Gemini] = await Promise.all([
+          callClaude(userMessages).catch(e => '(오류: ' + e.message + ')'),
+          callGPT(userMessages).catch(e => '(오류: ' + e.message + ')'),
+          callGemini(userMessages).catch(e => '(오류: ' + e.message + ')')
+        ]);
+
+        round1.claude = r1Claude;
+        round1.gpt = r1GPT;
+        round1.gemini = r1Gemini;
+
+        // ── Round 2: 상호 검토 ──
+        updateProgress(progressEl, 2);
+
+        const reviewPrompt = (myName, myAnswer, others) =>
+          `사용자의 질문: "${text}"
+
+당신(${myName})의 답변:
+${myAnswer}
+
+다른 AI들의 답변:
+${others}
+
+위 답변들을 검토하세요:
+1. 다른 AI들의 답변에서 틀린 부분이나 부정확한 점을 지적하세요
+2. 보완할 점이 있으면 제시하세요
+3. 당신의 원래 답변에서 수정할 부분이 있으면 수정하세요
+간결하게 핵심만 작성하세요.`;
+
+        const [r2Claude, r2GPT, r2Gemini] = await Promise.all([
+          callClaude([{ role: 'user', content: reviewPrompt('Claude', round1.claude,
+            `[ChatGPT]: ${round1.gpt}\n\n[Gemini]: ${round1.gemini}`) }])
+            .catch(e => '(오류: ' + e.message + ')'),
+          callGPT([{ role: 'user', content: reviewPrompt('ChatGPT', round1.gpt,
+            `[Claude]: ${round1.claude}\n\n[Gemini]: ${round1.gemini}`) }])
+            .catch(e => '(오류: ' + e.message + ')'),
+          callGemini([{ role: 'user', content: reviewPrompt('Gemini', round1.gemini,
+            `[Claude]: ${round1.claude}\n\n[ChatGPT]: ${round1.gpt}`) }])
+            .catch(e => '(오류: ' + e.message + ')')
+        ]);
+
+        round2.claude = r2Claude;
+        round2.gpt = r2GPT;
+        round2.gemini = r2Gemini;
+
+        // ── Round 3: 최종 합의 ──
+        updateProgress(progressEl, 3);
+
+        const consensusPrompt = `사용자의 질문: "${text}"
+
+=== Round 1: 개별 답변 ===
+[Claude]: ${round1.claude}
+
+[ChatGPT]: ${round1.gpt}
+
+[Gemini]: ${round1.gemini}
+
+=== Round 2: 상호 검토 ===
+[Claude의 검토]: ${round2.claude}
+
+[ChatGPT의 검토]: ${round2.gpt}
+
+[Gemini의 검토]: ${round2.gemini}
+
+위 3개 AI의 답변과 상호 검토 내용을 종합하여, 최종 합의된 답변을 작성하세요.
+- 3개 AI가 동의하는 부분을 중심으로
+- 검토 과정에서 수정된 내용을 반영
+- 의견이 갈리는 부분은 각 입장을 명시
+- 명확하고 정리된 형태로 작성`;
+
+        finalAnswer = await callClaude([{ role: 'user', content: consensusPrompt }]);
+
+        // 진행 상태 제거 → 결과 표시
+        progressEl.remove();
+        appendDiscussionBlock(finalAnswer, round1, round2);
+
+      } catch (err) {
+        progressEl.remove();
+        addSystemMessage('오류: ' + err.message);
+      }
+
+      isSending = false;
+      sendBtn.disabled = false;
+      msgInput.focus();
     }
 
     // ─── UI 함수 ───
-    function appendMessage(msg, scroll = true) {
-      const isUser = msg.role === 'user';
+    function appendUserMessage(text) {
       const div = document.createElement('div');
-      div.className = `message ${isUser ? 'user' : 'ai'}`;
-
-      const avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      avatar.textContent = isUser ? '나' : 'AI';
-
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-
-      let html = '';
-      if (!isUser && msg.model) {
-        html += `<div class="model-tag">${msg.model}</div>`;
-      }
-      html += escapeHtml(msg.content);
-      html += `<div class="msg-time">${msg.time}</div>`;
-      bubble.innerHTML = html;
-
-      div.appendChild(avatar);
-      div.appendChild(bubble);
-      chatArea.appendChild(div);
-      if (scroll) scrollToBottom();
-    }
-
-    function showTyping(model) {
-      const div = document.createElement('div');
-      div.className = 'message ai';
+      div.className = 'message-user';
       div.innerHTML = `
-        <div class="avatar">AI</div>
-        <div class="bubble">
-          <div class="model-tag">${model}</div>
-          <div class="typing-indicator">
-            <span></span><span></span><span></span>
-          </div>
-        </div>`;
+        <div class="avatar">나</div>
+        <div class="bubble">${escapeHtml(text)}</div>`;
       chatArea.appendChild(div);
       scrollToBottom();
+    }
+
+    function appendDiscussionBlock(finalText, round1, round2) {
+      const id = 'disc-' + Date.now();
+      const div = document.createElement('div');
+      div.className = 'discussion-block';
+
+      div.innerHTML = `
+        <div class="final-answer">
+          <div class="final-answer-header">
+            <span class="icon">&#9878;</span> 최종 합의 답변
+          </div>
+          <div class="final-answer-body">${escapeHtml(finalText)}</div>
+          <div class="msg-time">${getNow()}</div>
+        </div>
+        <button class="discussion-toggle" onclick="toggleDetail('${id}')">
+          &#9654; 토론 과정 보기
+        </button>
+        <div class="discussion-detail" id="${id}">
+          <div class="round-section">
+            <div class="round-title">Round 1 — 개별 답변</div>
+            <div class="ai-response">
+              <div class="ai-response-header claude"><span class="ai-dot claude"></span> Claude</div>
+              <div class="ai-response-body">${escapeHtml(round1.claude)}</div>
+            </div>
+            <div class="ai-response">
+              <div class="ai-response-header gpt"><span class="ai-dot gpt"></span> ChatGPT</div>
+              <div class="ai-response-body">${escapeHtml(round1.gpt)}</div>
+            </div>
+            <div class="ai-response">
+              <div class="ai-response-header gemini"><span class="ai-dot gemini"></span> Gemini</div>
+              <div class="ai-response-body">${escapeHtml(round1.gemini)}</div>
+            </div>
+          </div>
+          <div class="round-section">
+            <div class="round-title">Round 2 — 상호 검토</div>
+            <div class="ai-response">
+              <div class="ai-response-header claude"><span class="ai-dot claude"></span> Claude의 검토</div>
+              <div class="ai-response-body">${escapeHtml(round2.claude)}</div>
+            </div>
+            <div class="ai-response">
+              <div class="ai-response-header gpt"><span class="ai-dot gpt"></span> ChatGPT의 검토</div>
+              <div class="ai-response-body">${escapeHtml(round2.gpt)}</div>
+            </div>
+            <div class="ai-response">
+              <div class="ai-response-header gemini"><span class="ai-dot gemini"></span> Gemini의 검토</div>
+              <div class="ai-response-body">${escapeHtml(round2.gemini)}</div>
+            </div>
+          </div>
+        </div>`;
+
+      chatArea.appendChild(div);
+      scrollToBottom();
+    }
+
+    function toggleDetail(id) {
+      const el = document.getElementById(id);
+      const btn = el.previousElementSibling;
+      el.classList.toggle('open');
+      btn.innerHTML = el.classList.contains('open')
+        ? '&#9660; 토론 과정 접기'
+        : '&#9654; 토론 과정 보기';
+      scrollToBottom();
+    }
+
+    function createProgressBlock() {
+      const div = document.createElement('div');
+      div.className = 'progress-block';
+      div.innerHTML = `
+        <div class="progress-bar">
+          <div class="progress-step active" id="ps1">
+            <div class="spinner"></div>
+            Round 1: AI들이 답변 중...
+          </div>
+          <div class="progress-step" id="ps2">
+            <span style="width:16px;text-align:center;color:#30363d">○</span>
+            Round 2: 서로 검토 중...
+          </div>
+          <div class="progress-step" id="ps3">
+            <span style="width:16px;text-align:center;color:#30363d">○</span>
+            Round 3: 최종 합의 중...
+          </div>
+        </div>`;
       return div;
+    }
+
+    function updateProgress(el, step) {
+      for (let i = 1; i <= 3; i++) {
+        const ps = el.querySelector('#ps' + i);
+        if (!ps) continue;
+        if (i < step) {
+          ps.className = 'progress-step done';
+          ps.querySelector('div, span').outerHTML = '<span class="check" style="width:16px;text-align:center">&#10003;</span>';
+        } else if (i === step) {
+          ps.className = 'progress-step active';
+          const indicator = ps.querySelector('div, span');
+          if (indicator) indicator.outerHTML = '<div class="spinner"></div>';
+        }
+      }
+      scrollToBottom();
     }
 
     function addSystemMessage(text) {
@@ -649,13 +765,7 @@
     }
 
     function clearChat() {
-      conversationHistory = [];
-      saveHistory();
       chatArea.innerHTML = '<div class="system-msg">대화가 초기화되었습니다</div>';
-    }
-
-    function saveHistory() {
-      localStorage.setItem('ai_chat_history', JSON.stringify(conversationHistory));
     }
 
     function scrollToBottom() {
