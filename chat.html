@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', '맑은 고딕', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 헤더 */
+    .header {
+      background: #161b22;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #30363d;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .model-select {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .model-select:focus { border-color: #58a6ff; }
+
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .header-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .header-btn:hover { color: #e6edf3; border-color: #58a6ff; }
+
+    /* 채팅 영역 */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+    /* 메시지 */
+    .message {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message.ai { align-self: flex-start; }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    .message.user .avatar { background: #1f6feb; }
+    .message.ai .avatar { background: #238636; }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14.5px;
+      line-height: 1.55;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message.user .bubble {
+      background: #1f6feb;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.ai .bubble {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble .model-tag {
+      font-size: 11px;
+      color: #58a6ff;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .bubble .msg-time {
+      font-size: 11px;
+      color: #484f58;
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    /* 타이핑 인디케이터 */
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 8px 0;
+    }
+
+    .typing-indicator span {
+      width: 7px;
+      height: 7px;
+      background: #58a6ff;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* 시스템 메시지 */
+    .system-msg {
+      text-align: center;
+      font-size: 13px;
+      color: #484f58;
+      padding: 8px;
+    }
+
+    /* 입력 영역 */
+    .input-area {
+      background: #161b22;
+      padding: 14px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      border-top: 1px solid #30363d;
+      flex-shrink: 0;
+    }
+
+    .input-area textarea {
+      flex: 1;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      padding: 10px 16px;
+      color: #e6edf3;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      max-height: 120px;
+      outline: none;
+      line-height: 1.4;
+    }
+
+    .input-area textarea:focus { border-color: #58a6ff; }
+    .input-area textarea::placeholder { color: #484f58; }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      background: #238636;
+      border: none;
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .send-btn:hover { background: #2ea043; }
+    .send-btn:active { transform: scale(0.93); }
+    .send-btn:disabled { background: #21262d; cursor: not-allowed; }
+
+    /* API 키 설정 모달 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: min(92%, 420px);
+    }
+
+    .modal h2 { font-size: 18px; margin-bottom: 8px; }
+    .modal p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.5; }
+
+    .modal label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #8b949e;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+
+    .modal input, .modal select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .modal input:focus, .modal select:focus { border-color: #58a6ff; }
+
+    .modal .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal .btn-primary {
+      flex: 1;
+      padding: 11px;
+      background: #238636;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .modal .btn-primary:hover { background: #2ea043; }
+
+    .modal .btn-secondary {
+      padding: 11px 18px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      color: #8b949e;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .hidden { display: none !important; }
+
+    /* 모바일 대응 */
+    @media (max-width: 600px) {
+      .message { max-width: 92%; }
+      .header h1 { font-size: 15px; }
+      .header-btn span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- API 설정 모달 -->
+  <div class="modal-overlay hidden" id="settingsModal">
+    <div class="modal">
+      <h2>AI 모델 설정</h2>
+      <p>API 키를 입력하면 실제 AI 모델과 대화할 수 있습니다. 키는 브라우저에만 저장됩니다.</p>
+
+      <label>API 제공자</label>
+      <select id="apiProvider">
+        <option value="openai">OpenAI (GPT)</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+        <option value="google">Google (Gemini)</option>
+        <option value="custom">커스텀 엔드포인트</option>
+      </select>
+
+      <label>API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
+
+      <div id="customEndpointGroup" class="hidden">
+        <label>커스텀 API URL</label>
+        <input type="text" id="customEndpoint" placeholder="https://your-api.com/v1/chat">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeSettings()">취소</button>
+        <button class="btn-primary" onclick="saveSettings()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 헤더 -->
+  <div class="header">
+    <h1>AI Chat</h1>
+    <select class="model-select" id="modelSelect">
+      <optgroup label="OpenAI">
+        <option value="gpt-4o">GPT-4o</option>
+        <option value="gpt-4o-mini">GPT-4o Mini</option>
+        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+      </optgroup>
+      <optgroup label="Anthropic">
+        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
+        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+      </optgroup>
+      <optgroup label="Google">
+        <option value="gemini-pro">Gemini Pro</option>
+        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+      </optgroup>
+    </select>
+    <div class="header-actions">
+      <button class="header-btn" onclick="openSettings()">&#9881; <span>설정</span></button>
+      <button class="header-btn" onclick="clearChat()">&#128465; <span>초기화</span></button>
+    </div>
+  </div>
+
+  <!-- 채팅 영역 -->
+  <div class="chat-area" id="chatArea">
+    <div class="system-msg">AI 모델을 선택하고 대화를 시작하세요</div>
+  </div>
+
+  <!-- 입력 영역 -->
+  <div class="input-area">
+    <textarea id="msgInput" rows="1" placeholder="메시지를 입력하세요..."></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    const chatArea = document.getElementById('chatArea');
+    const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const modelSelect = document.getElementById('modelSelect');
+    const apiProvider = document.getElementById('apiProvider');
+
+    // 대화 기록 (컨텍스트 유지)
+    let conversationHistory = JSON.parse(localStorage.getItem('ai_chat_history') || '[]');
+
+    // 설정 불러오기
+    let settings = JSON.parse(localStorage.getItem('ai_chat_settings') || '{}');
+
+    // 시작 시 기존 대화 복원
+    if (conversationHistory.length > 0) {
+      conversationHistory.forEach(msg => appendMessage(msg, false));
+      scrollToBottom();
+    }
+
+    if (settings.model) {
+      modelSelect.value = settings.model;
+    }
+
+    // ─── 설정 모달 ───
+    function openSettings() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+      if (settings.provider) apiProvider.value = settings.provider;
+      if (settings.apiKey) document.getElementById('apiKeyInput').value = settings.apiKey;
+      if (settings.customEndpoint) document.getElementById('customEndpoint').value = settings.customEndpoint;
+      toggleCustomEndpoint();
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      settings.provider = apiProvider.value;
+      settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+      settings.customEndpoint = document.getElementById('customEndpoint').value.trim();
+      localStorage.setItem('ai_chat_settings', JSON.stringify(settings));
+      closeSettings();
+      addSystemMessage('설정이 저장되었습니다.');
+    }
+
+    apiProvider.addEventListener('change', toggleCustomEndpoint);
+
+    function toggleCustomEndpoint() {
+      const group = document.getElementById('customEndpointGroup');
+      group.classList.toggle('hidden', apiProvider.value !== 'custom');
+    }
+
+    // ─── 메시지 전송 ───
+    let isSending = false;
+
+    async function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text || isSending) return;
+
+      const model = modelSelect.value;
+      settings.model = model;
+      localStorage.setItem('ai_chat_settings', JSON.stringify(settings));
+
+      // 사용자 메시지
+      const userMsg = {
+        role: 'user',
+        content: text,
+        time: getNow()
+      };
+      conversationHistory.push(userMsg);
+      saveHistory();
+      appendMessage(userMsg);
+
+      msgInput.value = '';
+      msgInput.style.height = 'auto';
+
+      // AI 응답 호출
+      isSending = true;
+      sendBtn.disabled = true;
+      const typingEl = showTyping(model);
+
+      try {
+        const reply = await callAI(model, conversationHistory);
+        const aiMsg = {
+          role: 'assistant',
+          model: model,
+          content: reply,
+          time: getNow()
+        };
+        conversationHistory.push(aiMsg);
+        saveHistory();
+        typingEl.remove();
+        appendMessage(aiMsg);
+      } catch (err) {
+        typingEl.remove();
+        addSystemMessage('오류: ' + err.message);
+      }
+
+      isSending = false;
+      sendBtn.disabled = false;
+      msgInput.focus();
+    }
+
+    // ─── AI API 호출 ───
+    async function callAI(model, history) {
+      const provider = settings.provider || detectProvider(model);
+      const apiKey = settings.apiKey;
+
+      if (!apiKey) {
+        throw new Error('API 키가 설정되지 않았습니다. 설정 버튼을 눌러 API 키를 입력하세요.');
+      }
+
+      const messages = history.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      if (provider === 'openai') {
+        return await callOpenAI(apiKey, model, messages);
+      } else if (provider === 'anthropic') {
+        return await callAnthropic(apiKey, model, messages);
+      } else if (provider === 'google') {
+        return await callGoogle(apiKey, model, messages);
+      } else if (provider === 'custom') {
+        return await callCustom(settings.customEndpoint, apiKey, model, messages);
+      }
+
+      throw new Error('지원하지 않는 제공자입니다.');
+    }
+
+    function detectProvider(model) {
+      if (model.startsWith('gpt')) return 'openai';
+      if (model.startsWith('claude')) return 'anthropic';
+      if (model.startsWith('gemini')) return 'google';
+      return 'openai';
+    }
+
+    // OpenAI
+    async function callOpenAI(apiKey, model, messages) {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({ model, messages, max_tokens: 4096 })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.choices[0].message.content;
+    }
+
+    // Anthropic
+    async function callAnthropic(apiKey, model, messages) {
+      // Anthropic API는 CORS 제한이 있어 프록시가 필요할 수 있음
+      const systemMsg = messages.find(m => m.role === 'system');
+      const chatMsgs = messages.filter(m => m.role !== 'system');
+
+      const body = {
+        model,
+        max_tokens: 4096,
+        messages: chatMsgs
+      };
+      if (systemMsg) body.system = systemMsg.content;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.content[0].text;
+    }
+
+    // Google Gemini
+    async function callGoogle(apiKey, model, messages) {
+      const contents = messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents })
+        }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    // 커스텀 엔드포인트 (OpenAI 호환 형식)
+    async function callCustom(endpoint, apiKey, model, messages) {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({ model, messages, max_tokens: 4096 })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+      if (data.choices) return data.choices[0].message.content;
+      if (data.content) return data.content[0].text;
+      return JSON.stringify(data);
+    }
+
+    // ─── UI 함수 ───
+    function appendMessage(msg, scroll = true) {
+      const isUser = msg.role === 'user';
+      const div = document.createElement('div');
+      div.className = `message ${isUser ? 'user' : 'ai'}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = isUser ? '나' : 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+
+      let html = '';
+      if (!isUser && msg.model) {
+        html += `<div class="model-tag">${msg.model}</div>`;
+      }
+      html += escapeHtml(msg.content);
+      html += `<div class="msg-time">${msg.time}</div>`;
+      bubble.innerHTML = html;
+
+      div.appendChild(avatar);
+      div.appendChild(bubble);
+      chatArea.appendChild(div);
+      if (scroll) scrollToBottom();
+    }
+
+    function showTyping(model) {
+      const div = document.createElement('div');
+      div.className = 'message ai';
+      div.innerHTML = `
+        <div class="avatar">AI</div>
+        <div class="bubble">
+          <div class="model-tag">${model}</div>
+          <div class="typing-indicator">
+            <span></span><span></span><span></span>
+          </div>
+        </div>`;
+      chatArea.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function addSystemMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'system-msg';
+      div.textContent = text;
+      chatArea.appendChild(div);
+      scrollToBottom();
+    }
+
+    function clearChat() {
+      conversationHistory = [];
+      saveHistory();
+      chatArea.innerHTML = '<div class="system-msg">대화가 초기화되었습니다</div>';
+    }
+
+    function saveHistory() {
+      localStorage.setItem('ai_chat_history', JSON.stringify(conversationHistory));
+    }
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function getNow() {
+      return new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // 텍스트 영역 자동 높이
+    msgInput.addEventListener('input', () => {
+      msgInput.style.height = 'auto';
+      msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+    });
+
+    // Enter 전송, Shift+Enter 줄바꿈
+    msgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
