@@ -503,7 +503,7 @@
       return data.choices[0].message.content;
     }
 
-    async function callGemini(messages) {
+    async function callGemini(messages, retries = 2) {
       const contents = messages
         .filter(m => m.role !== 'system')
         .map(m => ({
@@ -526,7 +526,14 @@
         }
       );
       const data = await res.json();
-      if (data.error) throw new Error('Gemini: ' + data.error.message);
+      if (data.error) {
+        // 429 Rate Limit: 대기 후 재시도
+        if (res.status === 429 && retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          return callGemini(messages, retries - 1);
+        }
+        throw new Error('Gemini: ' + data.error.message);
+      }
       return data.candidates[0].content.parts[0].text;
     }
 
@@ -577,6 +584,9 @@
 
         // ── Round 2: 상호 검토 ──
         updateProgress(progressEl, 2);
+
+        // Gemini 속도 제한 방지: Round 1 후 3초 대기
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         const reviewPrompt = (myName, myAnswer, others) =>
           `사용자의 질문: "${text}"
